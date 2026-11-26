@@ -1,0 +1,359 @@
+{
+  "name": "vscode-inline-review",
+  "displayName": "Inline Review",
+  "version": "0.1.0",
+  "publisher": "dmadani410",
+  "description": "Review AI agent edits inline in VS Code — accept, reject, or edit changes hunk by hunk.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dmadani410/vscode-inline-review.git"
+  },
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Other",
+    "SCM Providers"
+  ],
+  "keywords": [
+    "ai",
+    "agent",
+    "claude-code",
+    "antigravity",
+    "diff",
+    "inline-diff",
+    "review",
+    "hunk"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "node esbuild.mjs",
+    "build:prod": "node esbuild.mjs --production",
+    "test": "vitest run",
+    "package": "npm run build:prod && npx vsce package"
+  },
+  "dependencies": {
+    "diff": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/diff": "^7.0.0",
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.95.0",
+    "@vscode/vsce": "^3.3.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "inline-review",
+          "title": "Inline Review",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "inline-review": [
+        {
+          "id": "inlineReview.pendingFiles",
+          "name": "Pending Reviews"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "inlineReview.pendingFiles",
+        "contents": "No pending agent edits right now.\n\nExternal edits by Claude Code, Antigravity, Codex, or any AI agent will appear here automatically.\n[Import Git Uncommitted Changes](command:inlineReview.importGitChanges)"
+      }
+    ],
+    "commands": [
+      {
+        "command": "inlineReview.openInlineDiff",
+        "title": "Inline Review: Open Inline Diff",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "inlineReview.toggleInlineDiff",
+        "title": "Inline Review: Toggle Inline Diff View",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "inlineReview.toggleSideBySide",
+        "title": "Inline Review: Toggle Inline / Side-by-Side Diff",
+        "icon": "$(split-horizontal)"
+      },
+      {
+        "command": "inlineReview.acceptHunk",
+        "title": "Inline Review: Accept Hunk",
+        "icon": "$(check)"
+      },
+      {
+        "command": "inlineReview.rejectHunk",
+        "title": "Inline Review: Reject Hunk",
+        "icon": "$(close)"
+      },
+      {
+        "command": "inlineReview.acceptCurrentHunk",
+        "title": "Inline Review: Accept Current Hunk",
+        "icon": "$(check)"
+      },
+      {
+        "command": "inlineReview.rejectCurrentHunk",
+        "title": "Inline Review: Reject Current Hunk",
+        "icon": "$(close)"
+      },
+      {
+        "command": "inlineReview.acceptFile",
+        "title": "Inline Review: Accept File",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "inlineReview.rejectFile",
+        "title": "Inline Review: Reject File",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "inlineReview.acceptCurrentFile",
+        "title": "Inline Review: Accept Current File",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "inlineReview.rejectCurrentFile",
+        "title": "Inline Review: Reject Current File",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "inlineReview.acceptAll",
+        "title": "Inline Review: Accept All Pending Files",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "inlineReview.rejectAll",
+        "title": "Inline Review: Reject All Pending Files",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "inlineReview.nextHunk",
+        "title": "Inline Review: Next Hunk",
+        "icon": "$(arrow-down)"
+      },
+      {
+        "command": "inlineReview.prevHunk",
+        "title": "Inline Review: Previous Hunk",
+        "icon": "$(arrow-up)"
+      },
+      {
+        "command": "inlineReview.nextPendingFile",
+        "title": "Inline Review: Next Pending File",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "inlineReview.undoLastAction",
+        "title": "Inline Review: Undo Last Review Action",
+        "icon": "$(history)"
+      },
+      {
+        "command": "inlineReview.importGitChanges",
+        "title": "Inline Review: Import Git Uncommitted Changes",
+        "icon": "$(git-commit)"
+      },
+      {
+        "command": "inlineReview.refresh",
+        "title": "Inline Review: Refresh Pending Reviews",
+        "icon": "$(refresh)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "inlineReview.acceptCurrentHunk",
+        "key": "alt+y",
+        "when": "editorTextFocus && inlineReview.activeFileHasPending"
+      },
+      {
+        "command": "inlineReview.rejectCurrentHunk",
+        "key": "alt+n",
+        "when": "editorTextFocus && inlineReview.activeFileHasPending"
+      },
+      {
+        "command": "inlineReview.acceptCurrentFile",
+        "key": "alt+shift+y",
+        "when": "inlineReview.activeFileHasPending"
+      },
+      {
+        "command": "inlineReview.rejectCurrentFile",
+        "key": "alt+shift+n",
+        "when": "inlineReview.activeFileHasPending"
+      },
+      {
+        "command": "inlineReview.nextHunk",
+        "key": "alt+]",
+        "when": "editorTextFocus && inlineReview.activeFileHasPending"
+      },
+      {
+        "command": "inlineReview.prevHunk",
+        "key": "alt+[",
+        "when": "editorTextFocus && inlineReview.activeFileHasPending"
+      },
+      {
+        "command": "inlineReview.toggleInlineDiff",
+        "key": "alt+r",
+        "when": "inlineReview.hasPendingFiles"
+      },
+      {
+        "command": "inlineReview.nextPendingFile",
+        "key": "alt+shift+]",
+        "when": "inlineReview.hasPendingFiles"
+      },
+      {
+        "command": "inlineReview.undoLastAction",
+        "key": "alt+z",
+        "when": "inlineReview.canUndo"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "inlineReview.acceptCurrentFile",
+          "when": "inlineReview.activeFileHasPending",
+          "group": "navigation@1"
+        },
+        {
+          "command": "inlineReview.rejectCurrentFile",
+          "when": "inlineReview.activeFileHasPending",
+          "group": "navigation@2"
+        },
+        {
+          "command": "inlineReview.prevHunk",
+          "when": "inlineReview.activeFileHasPending",
+          "group": "navigation@3"
+        },
+        {
+          "command": "inlineReview.nextHunk",
+          "when": "inlineReview.activeFileHasPending",
+          "group": "navigation@4"
+        },
+        {
+          "command": "inlineReview.toggleInlineDiff",
+          "when": "inlineReview.activeFileHasPending || inlineReview.inDiffView",
+          "group": "navigation@5"
+        },
+        {
+          "command": "inlineReview.toggleSideBySide",
+          "when": "inlineReview.inDiffView",
+          "group": "navigation@6"
+        },
+        {
+          "command": "inlineReview.undoLastAction",
+          "when": "inlineReview.canUndo",
+          "group": "navigation@7"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "inlineReview.acceptAll",
+          "when": "view == inlineReview.pendingFiles && inlineReview.hasPendingFiles",
+          "group": "navigation@1"
+        },
+        {
+          "command": "inlineReview.rejectAll",
+          "when": "view == inlineReview.pendingFiles && inlineReview.hasPendingFiles",
+          "group": "navigation@2"
+        },
+        {
+          "command": "inlineReview.undoLastAction",
+          "when": "view == inlineReview.pendingFiles && inlineReview.canUndo",
+          "group": "navigation@3"
+        },
+        {
+          "command": "inlineReview.importGitChanges",
+          "when": "view == inlineReview.pendingFiles",
+          "group": "navigation@4"
+        },
+        {
+          "command": "inlineReview.refresh",
+          "when": "view == inlineReview.pendingFiles",
+          "group": "navigation@5"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "inlineReview.openInlineDiff",
+          "when": "view == inlineReview.pendingFiles && viewItem == file",
+          "group": "inline@1"
+        },
+        {
+          "command": "inlineReview.acceptFile",
+          "when": "view == inlineReview.pendingFiles && viewItem == file",
+          "group": "inline@2"
+        },
+        {
+          "command": "inlineReview.rejectFile",
+          "when": "view == inlineReview.pendingFiles && viewItem == file",
+          "group": "inline@3"
+        },
+        {
+          "command": "inlineReview.acceptHunk",
+          "when": "view == inlineReview.pendingFiles && viewItem == hunk",
+          "group": "inline@1"
+        },
+        {
+          "command": "inlineReview.rejectHunk",
+          "when": "view == inlineReview.pendingFiles && viewItem == hunk",
+          "group": "inline@2"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Inline Review",
+      "properties": {
+        "inlineReview.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable automatic detection of external AI agent edits in the workspace."
+        },
+        "inlineReview.autoInlineDiff": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically switch diffEditor.renderSideBySide to inline mode while focused on an Inline Review diff tab, and restore your original global setting otherwise."
+        },
+        "inlineReview.autoSaveOnReject": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically save the file to disk after rejecting a hunk or file."
+        },
+        "inlineReview.excludePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Additional glob patterns to exclude from external edit tracking."
+        },
+        "inlineReview.maxFileSizeKB": {
+          "type": "number",
+          "default": 2048,
+          "minimum": 16,
+          "description": "Maximum file size (in KB) to track for inline review."
+        },
+        "inlineReview.maxBurstFiles": {
+          "type": "number",
+          "default": 50,
+          "minimum": 1,
+          "description": "Maximum number of files in a single write burst before prompting confirmation."
+        },
+        "inlineReview.persistState": {
+          "type": "boolean",
+          "default": true,
+          "description": "Persist pending review baselines across VS Code restarts."
+        }
+      }
+    }
+  }
+}
