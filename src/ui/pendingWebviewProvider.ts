@@ -744,7 +744,7 @@ export class PendingWebviewProvider
         if (file.hunks.length > 0 && !collapsedFiles.has(file.relativePath)) {
           const hunkList = document.createElement('div');
           hunkList.className = 'hunk-list';
-          const activeTarget = state.activeHunk.hovered || state.activeHunk.selected;
+          const activeTarget = state.activeHunk.active;
 
           for (const h of file.hunks) {
             const isActive = Boolean(

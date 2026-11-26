@@ -16,10 +16,8 @@ export interface ActiveHunkRef {
 }
 
 export interface ActiveHunkState {
-  /** Hunk currently selected via editor cursor or sidebar click. */
-  selected: ActiveHunkRef | null;
-  /** Hunk currently pointed at by mouse hover in editor. */
-  hovered: ActiveHunkRef | null;
+  /** Single currently active pending hunk (selected by cursor/click or pointed by hover). */
+  active: ActiveHunkRef | null;
 }
 
 function refsEqual(a: ActiveHunkRef | null, b: ActiveHunkRef | null): boolean {
@@ -39,8 +37,7 @@ export class ActiveHunkTracker
   private readonly _onDidChange = new vscode.EventEmitter<ActiveHunkState>();
   readonly onDidChange = this._onDidChange.event;
 
-  private selected: ActiveHunkRef | null = null;
-  private hovered: ActiveHunkRef | null = null;
+  private active: ActiveHunkRef | null = null;
 
   constructor(private readonly controller: BaselineController) {
     this.disposables.push(
@@ -49,12 +46,12 @@ export class ActiveHunkTracker
       }),
       vscode.window.onDidChangeActiveTextEditor((editor) => {
         if (!editor) {
-          this.setHovered(null);
+          this.setActive(null);
           return;
         }
         const rel = this.resolveDocContext(editor.document)?.relativePath ?? null;
-        if (this.hovered && this.hovered.relativePath !== rel) {
-          this.setHovered(null);
+        if (this.active && this.active.relativePath !== rel) {
+          this.setActive(null);
         }
         void this.syncFromEditorSelection(editor);
       })
@@ -63,38 +60,25 @@ export class ActiveHunkTracker
 
   getState(): ActiveHunkState {
     return {
-      selected: this.selected ? { ...this.selected } : null,
-      hovered: this.hovered ? { ...this.hovered } : null,
+      active: this.active ? { ...this.active } : null,
     };
   }
 
   setSelected(ref: ActiveHunkRef | null): void {
-    if (refsEqual(this.selected, ref)) {
-      return;
-    }
-    this.selected = ref ? { ...ref } : null;
-    this._onDidChange.fire(this.getState());
+    this.setActive(ref);
   }
 
-  setHovered(ref: ActiveHunkRef | null): void {
-    if (refsEqual(this.hovered, ref)) {
+  private setActive(ref: ActiveHunkRef | null): void {
+    if (refsEqual(this.active, ref)) {
       return;
     }
-    this.hovered = ref ? { ...ref } : null;
+    this.active = ref ? { ...ref } : null;
     this._onDidChange.fire(this.getState());
   }
 
   clearForFile(relativePath: string): void {
-    let changed = false;
-    if (this.selected?.relativePath === relativePath) {
-      this.selected = null;
-      changed = true;
-    }
-    if (this.hovered?.relativePath === relativePath) {
-      this.hovered = null;
-      changed = true;
-    }
-    if (changed) {
+    if (this.active?.relativePath === relativePath) {
+      this.active = null;
       this._onDidChange.fire(this.getState());
     }
   }
@@ -185,7 +169,9 @@ export class ActiveHunkTracker
       return undefined;
     }
     const ref = await this.resolveHunkAtLine(document, position.line);
-    this.setHovered(ref);
+    if (ref) {
+      this.setActive(ref);
+    }
     if (!ref) {
       return undefined;
     }
