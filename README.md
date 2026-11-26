@@ -1,5 +1,7 @@
 # Inline Review (`vscode-inline-review`)
 
+**English** | [简体中文](./README.zh-CN.md)
+
 Review AI agent edits inline in VS Code — accept, reject, or edit changes hunk by hunk.
 
 Works out of the box with **Claude Code (CLI & extension), Antigravity, Codex, Gemini CLI, Aider, Cline, OpenCode**, and any other local tool or agent that modifies workspace files.
