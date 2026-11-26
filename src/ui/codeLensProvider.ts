@@ -33,12 +33,12 @@ export class InlineReviewCodeLensProvider
       const range = new vscode.Range(0, 0, 0, 0);
       return [
         new vscode.CodeLens(range, {
-          title: '$(check) Accept Deletion',
+          title: '🟩 Accept Deletion',
           command: 'inlineReview.acceptFile',
           arguments: [rel],
         }),
         new vscode.CodeLens(range, {
-          title: '$(discard) Restore File',
+          title: '🟥 Restore File',
           command: 'inlineReview.rejectFile',
           arguments: [rel],
         }),
@@ -66,12 +66,12 @@ export class InlineReviewCodeLensProvider
       const topRange = new vscode.Range(0, 0, 0, 0);
       lenses.push(
         new vscode.CodeLens(topRange, {
-          title: '$(check-all) Accept New File',
+          title: '🟩 Accept New File',
           command: 'inlineReview.acceptFile',
           arguments: [rel],
         }),
         new vscode.CodeLens(topRange, {
-          title: '$(discard) Reject New File (Move to Trash)',
+          title: '🟥 Reject New File (Trash)',
           command: 'inlineReview.rejectFile',
           arguments: [rel],
         })
@@ -100,12 +100,12 @@ export class InlineReviewCodeLensProvider
 
       lenses.push(
         new vscode.CodeLens(range, {
-          title: '$(check) Accept',
+          title: '🟩 Accept',
           command: 'inlineReview.acceptHunk',
           arguments: [rel, h.index],
         }),
         new vscode.CodeLens(range, {
-          title: '$(close) Reject',
+          title: '🟥 Reject',
           command: 'inlineReview.rejectHunk',
           arguments: [rel, h.index],
         })

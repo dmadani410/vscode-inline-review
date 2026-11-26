@@ -173,8 +173,8 @@ export class ActiveHunkTracker
   }
 
   /**
-   * Pure hover sensor: highlights the pointed hunk in the sidebar without
-   * displaying any redundant "Hunk #X" annotation above the code.
+   * Highlights the pointed hunk in the sidebar and displays a minimal inline
+   * green/red Accept & Reject action bar without any redundant "Hunk #X" text.
    */
   async provideHover(
     document: vscode.TextDocument,
@@ -186,7 +186,53 @@ export class ActiveHunkTracker
     }
     const ref = await this.resolveHunkAtLine(document, position.line);
     this.setHovered(ref);
-    return undefined;
+    if (!ref) {
+      return undefined;
+    }
+
+    const pending = this.controller.getPending(ref.relativePath);
+    if (!pending) {
+      return undefined;
+    }
+
+    const md = new vscode.MarkdownString();
+    md.supportHtml = true;
+    md.isTrusted = true;
+
+    let acceptCmd: string;
+    let rejectCmd: string;
+    let acceptLabel: string;
+    let rejectLabel: string;
+
+    if (pending.kind === 'created') {
+      const args = encodeURIComponent(JSON.stringify([ref.relativePath]));
+      acceptCmd = `command:inlineReview.acceptFile?${args}`;
+      rejectCmd = `command:inlineReview.rejectFile?${args}`;
+      acceptLabel = '✓ Accept File';
+      rejectLabel = '✕ Reject File';
+    } else if (pending.kind === 'deleted') {
+      const args = encodeURIComponent(JSON.stringify([ref.relativePath]));
+      acceptCmd = `command:inlineReview.acceptFile?${args}`;
+      rejectCmd = `command:inlineReview.rejectFile?${args}`;
+      acceptLabel = '✓ Accept Deletion';
+      rejectLabel = '✕ Restore File';
+    } else {
+      const args = encodeURIComponent(
+        JSON.stringify([ref.relativePath, ref.hunkIndex])
+      );
+      acceptCmd = `command:inlineReview.acceptHunk?${args}`;
+      rejectCmd = `command:inlineReview.rejectHunk?${args}`;
+      acceptLabel = '✓ Accept';
+      rejectLabel = '✕ Reject';
+    }
+
+    md.appendMarkdown(
+      `<a href="${acceptCmd}"><span style="color:#ffffff;background-color:#238636;">&nbsp;&nbsp;${acceptLabel}&nbsp;&nbsp;</span></a>` +
+        `&nbsp;&nbsp;` +
+        `<a href="${rejectCmd}"><span style="color:#ffffff;background-color:#da3633;">&nbsp;&nbsp;${rejectLabel}&nbsp;&nbsp;</span></a>`
+    );
+
+    return new vscode.Hover(md);
   }
 
   dispose(): void {

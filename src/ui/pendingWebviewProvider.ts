@@ -475,22 +475,11 @@ export class PendingWebviewProvider
       background: var(--vscode-list-hoverBackground, rgba(128,128,128,0.14));
     }
 
-    /* Distinct color when editor cursor/click selects this pending hunk */
-    .hunk-row.is-selected {
+    /* Single unified highlight for the currently focused/pointed pending hunk */
+    .hunk-row.is-active {
       border-left-color: #388bfd;
-      background: rgba(56, 139, 253, 0.18);
-    }
-
-    /* Distinct warm highlight when editor mouse pointer hovers over this pending hunk */
-    .hunk-row.is-hovered {
-      border-left-color: #e3b341;
-      background: rgba(227, 179, 65, 0.22);
-    }
-
-    .hunk-row.is-selected.is-hovered {
-      border-left-color: #e3b341;
-      background: rgba(227, 179, 65, 0.26);
-      box-shadow: inset 0 0 0 1px rgba(56, 139, 253, 0.55);
+      background: rgba(56, 139, 253, 0.22);
+      box-shadow: inset 0 0 0 1px rgba(56, 139, 253, 0.4);
     }
 
     .hunk-top {
@@ -523,9 +512,9 @@ export class PendingWebviewProvider
       height: 7px;
       border-radius: 50%;
       flex-shrink: 0;
+      background: #388bfd;
+      box-shadow: 0 0 6px rgba(56, 139, 253, 0.9);
     }
-    .dot-hovered { background: #e3b341; box-shadow: 0 0 6px rgba(227, 179, 65, 0.9); }
-    .dot-selected { background: #388bfd; box-shadow: 0 0 6px rgba(56, 139, 253, 0.85); }
 
     .hunk-preview {
       font-family: var(--vscode-editor-font-family, monospace);
@@ -543,9 +532,8 @@ export class PendingWebviewProvider
       padding-top: 2px;
     }
 
-    /* Show colored Accept/Reject buttons whenever hunk is selected, pointed at, or hovered */
-    .hunk-row.is-selected .hunk-actions,
-    .hunk-row.is-hovered .hunk-actions,
+    /* Show colored Accept/Reject buttons whenever hunk is active or hovered */
+    .hunk-row.is-active .hunk-actions,
     .hunk-row:hover .hunk-actions {
       display: flex;
     }
@@ -756,24 +744,17 @@ export class PendingWebviewProvider
         if (file.hunks.length > 0 && !collapsedFiles.has(file.relativePath)) {
           const hunkList = document.createElement('div');
           hunkList.className = 'hunk-list';
+          const activeTarget = state.activeHunk.hovered || state.activeHunk.selected;
 
           for (const h of file.hunks) {
-            const isSelected = Boolean(
-              state.activeHunk.selected &&
-              state.activeHunk.selected.relativePath === file.relativePath &&
-              state.activeHunk.selected.hunkIndex === h.index
-            );
-            const isHovered = Boolean(
-              state.activeHunk.hovered &&
-              state.activeHunk.hovered.relativePath === file.relativePath &&
-              state.activeHunk.hovered.hunkIndex === h.index
+            const isActive = Boolean(
+              activeTarget &&
+              activeTarget.relativePath === file.relativePath &&
+              activeTarget.hunkIndex === h.index
             );
 
             const row = document.createElement('div');
-            row.className =
-              'hunk-row' +
-              (isSelected ? ' is-selected' : '') +
-              (isHovered ? ' is-hovered' : '');
+            row.className = 'hunk-row' + (isActive ? ' is-active' : '');
 
             row.addEventListener('click', () => {
               post({
@@ -790,9 +771,9 @@ export class PendingWebviewProvider
             const loc = document.createElement('div');
             loc.className = 'hunk-loc';
 
-            if (isHovered || isSelected) {
+            if (isActive) {
               const dot = document.createElement('span');
-              dot.className = 'status-dot ' + (isHovered ? 'dot-hovered' : 'dot-selected');
+              dot.className = 'status-dot';
               loc.appendChild(dot);
             }
 
@@ -840,12 +821,9 @@ export class PendingWebviewProvider
             );
             row.appendChild(actions);
 
-            if (isHovered) {
+            if (isActive) {
               elementToScroll = row;
-              scrollTargetKey = 'h:' + file.relativePath + ':' + h.index;
-            } else if (isSelected && !elementToScroll) {
-              elementToScroll = row;
-              scrollTargetKey = 's:' + file.relativePath + ':' + h.index;
+              scrollTargetKey = file.relativePath + ':' + h.index;
             }
 
             hunkList.appendChild(row);
