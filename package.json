@@ -62,17 +62,12 @@
     "views": {
       "inline-review": [
         {
+          "type": "webview",
           "id": "inlineReview.pendingFiles",
           "name": "Pending Reviews"
         }
       ]
     },
-    "viewsWelcome": [
-      {
-        "view": "inlineReview.pendingFiles",
-        "contents": "No pending agent edits right now.\n\nExternal edits by Claude Code, Antigravity, Codex, or any AI agent will appear here automatically.\n[Import Git Uncommitted Changes](command:inlineReview.importGitChanges)"
-      }
-    ],
     "commands": [
       {
         "command": "inlineReview.openInlineDiff",
@@ -218,95 +213,16 @@
       }
     ],
     "menus": {
-      "editor/title": [
-        {
-          "command": "inlineReview.acceptCurrentFile",
-          "when": "inlineReview.activeFileHasPending",
-          "group": "navigation@1"
-        },
-        {
-          "command": "inlineReview.rejectCurrentFile",
-          "when": "inlineReview.activeFileHasPending",
-          "group": "navigation@2"
-        },
-        {
-          "command": "inlineReview.prevHunk",
-          "when": "inlineReview.activeFileHasPending",
-          "group": "navigation@3"
-        },
-        {
-          "command": "inlineReview.nextHunk",
-          "when": "inlineReview.activeFileHasPending",
-          "group": "navigation@4"
-        },
-        {
-          "command": "inlineReview.toggleInlineDiff",
-          "when": "inlineReview.activeFileHasPending || inlineReview.inDiffView",
-          "group": "navigation@5"
-        },
-        {
-          "command": "inlineReview.toggleSideBySide",
-          "when": "inlineReview.inDiffView",
-          "group": "navigation@6"
-        },
-        {
-          "command": "inlineReview.undoLastAction",
-          "when": "inlineReview.canUndo",
-          "group": "navigation@7"
-        }
-      ],
       "view/title": [
-        {
-          "command": "inlineReview.acceptAll",
-          "when": "view == inlineReview.pendingFiles && inlineReview.hasPendingFiles",
-          "group": "navigation@1"
-        },
-        {
-          "command": "inlineReview.rejectAll",
-          "when": "view == inlineReview.pendingFiles && inlineReview.hasPendingFiles",
-          "group": "navigation@2"
-        },
-        {
-          "command": "inlineReview.undoLastAction",
-          "when": "view == inlineReview.pendingFiles && inlineReview.canUndo",
-          "group": "navigation@3"
-        },
         {
           "command": "inlineReview.importGitChanges",
           "when": "view == inlineReview.pendingFiles",
-          "group": "navigation@4"
+          "group": "navigation@1"
         },
         {
           "command": "inlineReview.refresh",
           "when": "view == inlineReview.pendingFiles",
-          "group": "navigation@5"
-        }
-      ],
-      "view/item/context": [
-        {
-          "command": "inlineReview.openInlineDiff",
-          "when": "view == inlineReview.pendingFiles && viewItem == file",
-          "group": "inline@1"
-        },
-        {
-          "command": "inlineReview.acceptFile",
-          "when": "view == inlineReview.pendingFiles && viewItem == file",
-          "group": "inline@2"
-        },
-        {
-          "command": "inlineReview.rejectFile",
-          "when": "view == inlineReview.pendingFiles && viewItem == file",
-          "group": "inline@3"
-        },
-        {
-          "command": "inlineReview.acceptHunk",
-          "when": "view == inlineReview.pendingFiles && viewItem == hunk",
-          "group": "inline@1"
-        },
-        {
-          "command": "inlineReview.rejectHunk",
-          "when": "view == inlineReview.pendingFiles && viewItem == hunk",
-          "group": "inline@2"
+          "group": "navigation@2"
         }
       ]
     },

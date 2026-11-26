@@ -261,3 +261,43 @@ export function findTargetHunkIndex(
     nextIndex: downward >= 0 ? downward : 0,
   };
 }
+
+export function findExactHunkIndexForLine(
+  hunks: DiffHunk[],
+  line: number,
+  side: 'new' | 'old'
+): number | null {
+  for (let i = 0; i < hunks.length; i += 1) {
+    const h = hunks[i];
+    if (side === 'new') {
+      if (isCursorInHunk(h, line)) {
+        return i;
+      }
+    } else if (h.oldCount > 0) {
+      if (line >= h.oldStart && line < h.oldStart + h.oldCount) {
+        return i;
+      }
+    } else if (line === h.oldStart) {
+      return i;
+    }
+  }
+  return null;
+}
+
+export function formatHunkLineRange(hunk: DiffHunk): string {
+  const start = hunk.newStart + 1;
+  if (hunk.newCount > 1) {
+    return `L${start}–L${start + hunk.newCount - 1}`;
+  }
+  return `L${start}`;
+}
+
+export function getHunkPreviewLine(hunk: DiffHunk, maxLen = 64): string {
+  const candidates = hunk.newLines.length > 0 ? hunk.newLines : hunk.oldLines;
+  const firstNonEmpty = candidates.find((line) => line.trim().length > 0) ?? candidates[0] ?? '';
+  const trimmed = firstNonEmpty.trim();
+  if (trimmed.length <= maxLen) {
+    return trimmed;
+  }
+  return trimmed.slice(0, Math.max(1, maxLen - 1)) + '…';
+}

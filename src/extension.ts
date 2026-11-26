@@ -4,6 +4,7 @@ import { GitService } from './baseline/gitService.js';
 import { ReviewStore } from './baseline/reviewStore.js';
 import { findTargetHunkIndex } from './diff/diffEngine.js';
 import { UndoStack } from './diff/undoStack.js';
+import { ActiveHunkTracker } from './ui/activeHunkTracker.js';
 import {
   BASELINE_SCHEME,
   BaselineContentProvider,
@@ -12,10 +13,7 @@ import {
 import { InlineReviewCodeLensProvider } from './ui/codeLensProvider.js';
 import { DecorationManager } from './ui/decorations.js';
 import { DiffViewManager } from './ui/diffViewManager.js';
-import {
-  PendingTreeItem,
-  PendingTreeProvider,
-} from './ui/pendingTreeProvider.js';
+import { PendingWebviewProvider } from './ui/pendingWebviewProvider.js';
 import { QuickDiffManager } from './ui/quickDiffProvider.js';
 import { StatusBarManager } from './ui/statusBar.js';
 
@@ -24,15 +22,6 @@ let activeDiffViewManager: DiffViewManager | undefined;
 function extractRelativePathArg(arg: unknown): string | undefined {
   if (typeof arg === 'string') {
     return arg;
-  }
-  if (arg && typeof arg === 'object') {
-    const obj = arg as Partial<PendingTreeItem>;
-    if (obj.nodeType === 'file' && obj.review) {
-      return obj.review.relativePath;
-    }
-    if (obj.nodeType === 'hunk') {
-      return obj.relativePath;
-    }
   }
   return undefined;
 }
@@ -43,12 +32,6 @@ function extractHunkArgs(
 ): { relativePath?: string; hunkIndex?: number } {
   if (typeof arg1 === 'string' && typeof arg2 === 'number') {
     return { relativePath: arg1, hunkIndex: arg2 };
-  }
-  if (arg1 && typeof arg1 === 'object') {
-    const obj = arg1 as Partial<PendingTreeItem>;
-    if (obj.nodeType === 'hunk' && obj.hunk) {
-      return { relativePath: obj.relativePath, hunkIndex: obj.hunk.index };
-    }
   }
   return {};
 }
@@ -75,20 +58,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const diffViewManager = new DiffViewManager(context, controller);
   activeDiffViewManager = diffViewManager;
 
+  const activeHunkTracker = new ActiveHunkTracker(controller);
   const codeLensProvider = new InlineReviewCodeLensProvider(
     controller,
     diffViewManager
   );
   const decorationManager = new DecorationManager(controller, diffViewManager);
   const quickDiffManager = new QuickDiffManager(workspaceFolder, controller);
-  const treeProvider = new PendingTreeProvider(controller);
+  const webviewProvider = new PendingWebviewProvider(
+    controller,
+    diffViewManager,
+    activeHunkTracker
+  );
   const statusBar = new StatusBarManager(controller);
-
-  const treeView = vscode.window.createTreeView('inlineReview.pendingFiles', {
-    treeDataProvider: treeProvider,
-    showCollapseAll: true,
-  });
-  treeProvider.attachTreeView(treeView);
 
   const syncContextKeys = async () => {
     const hasPending = controller.getAllPending().length > 0;
@@ -118,7 +100,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     codeLensProvider.refresh();
     decorationManager.updateAllVisibleEditors();
     quickDiffManager.refresh();
-    treeProvider.refresh();
+    webviewProvider.refresh();
     void statusBar.refresh();
     void syncContextKeys();
   };
@@ -172,8 +154,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     if (exactOrNearIndex === null) {
       if (editor && nextIndex !== null) {
         jumpToHunk(editor, hunks[nextIndex].newStart);
+        activeHunkTracker.setSelected({
+          relativePath: rel,
+          hunkIndex: nextIndex,
+        });
         vscode.window.setStatusBarMessage(
-          `Inline Review: Jumped to hunk #${nextIndex + 1} — press again to ${mode}`,
+          `Inline Review: Jumped to L${hunks[nextIndex].newStart + 1} — press again to ${mode}`,
           3000
         );
       }
@@ -217,18 +203,28 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }
 
     jumpToHunk(editor, hunks[targetIndex].newStart);
+    activeHunkTracker.setSelected({
+      relativePath: rel,
+      hunkIndex: targetIndex,
+    });
   };
 
   context.subscriptions.push(
     controller,
     baselineContentProvider,
     diffViewManager,
+    activeHunkTracker,
     codeLensProvider,
     decorationManager,
     quickDiffManager,
-    treeProvider,
-    treeView,
+    webviewProvider,
     statusBar,
+
+    vscode.window.registerWebviewViewProvider(
+      'inlineReview.pendingFiles',
+      webviewProvider,
+      { webviewOptions: { retainContextWhenHidden: true } }
+    ),
 
     vscode.workspace.registerTextDocumentContentProvider(
       BASELINE_SCHEME,
@@ -242,15 +238,21 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       [{ scheme: 'file' }, { scheme: DELETED_SCHEME }],
       codeLensProvider
     ),
+    vscode.languages.registerHoverProvider(
+      [{ scheme: 'file' }, { scheme: BASELINE_SCHEME }],
+      activeHunkTracker
+    ),
 
     controller.onDidChange((rel) => refreshAllUi(rel)),
     controller.onDidFileResolved((rel) => {
+      activeHunkTracker.clearForFile(rel);
       void diffViewManager.returnToNormalTabIfResolved(rel);
     }),
 
     vscode.window.onDidChangeActiveTextEditor(() => {
       decorationManager.updateAllVisibleEditors();
       codeLensProvider.refresh();
+      webviewProvider.refresh();
       void syncContextKeys();
     }),
     vscode.window.onDidChangeVisibleTextEditors(() => {
@@ -259,6 +261,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.window.tabGroups.onDidChangeTabs(() => {
       decorationManager.updateAllVisibleEditors();
       codeLensProvider.refresh();
+      webviewProvider.refresh();
       void syncContextKeys();
     }),
 
@@ -273,14 +276,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           void vscode.window.showInformationMessage('No pending inline reviews.');
           return;
         }
-        const jumpLine =
-          typeof line === 'number'
-            ? line
-            : arg &&
-                typeof arg === 'object' &&
-                (arg as PendingTreeItem).nodeType === 'hunk'
-              ? (arg as { hunk: { newStart: number } }).hunk.newStart
-              : undefined;
+        const jumpLine = typeof line === 'number' ? line : undefined;
         await diffViewManager.openInlineDiff(rel, jumpLine);
       }
     ),

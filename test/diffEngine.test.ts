@@ -4,7 +4,10 @@ import {
   computeHunks,
   computeMinimalTextEdit,
   computeStats,
+  findExactHunkIndexForLine,
   findTargetHunkIndex,
+  formatHunkLineRange,
+  getHunkPreviewLine,
   revertHunkInCurrent,
 } from '../src/diff/diffEngine.js';
 
@@ -161,5 +164,25 @@ describe('diffEngine', () => {
       exactOrNearIndex: 0,
       nextIndex: 0,
     });
+  });
+
+  it('matches exact hunk for both new and old lines and formats range/preview cleanly', () => {
+    const base = ['a', 'old1', 'old2', 'b', 'c', 'd', ''].join('\n');
+    const curr = ['a', '  newLine1  ', 'newLine2', 'newLine3', 'b', 'd', ''].join('\n');
+
+    const hunks = computeHunks(base, curr);
+    expect(hunks).toHaveLength(2);
+
+    expect(findExactHunkIndexForLine(hunks, 1, 'new')).toBe(0);
+    expect(findExactHunkIndexForLine(hunks, 3, 'new')).toBe(0);
+    expect(findExactHunkIndexForLine(hunks, 0, 'new')).toBeNull();
+    expect(findExactHunkIndexForLine(hunks, 1, 'old')).toBe(0);
+    expect(findExactHunkIndexForLine(hunks, 4, 'old')).toBe(1);
+    expect(findExactHunkIndexForLine(hunks, 5, 'new')).toBe(1);
+
+    expect(formatHunkLineRange(hunks[0])).toBe('L2–L4');
+    expect(formatHunkLineRange(hunks[1])).toBe('L6');
+    expect(getHunkPreviewLine(hunks[0])).toBe('newLine1');
+    expect(getHunkPreviewLine(hunks[1])).toBe('c');
   });
 });

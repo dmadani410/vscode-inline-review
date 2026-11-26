@@ -604,7 +604,7 @@ export class BaselineController implements vscode.Disposable {
       type: 'accept',
       relativePath,
       fsPath: pending.fsPath,
-      description: `Accept hunk #${hunkIndex + 1} in ${relativePath}`,
+      description: `Accept change at L${hunks[hunkIndex].newStart + 1} in ${relativePath}`,
       previousPending: prevPendingClone,
       previousCleanBaseline: prevClean,
     });
@@ -676,7 +676,7 @@ export class BaselineController implements vscode.Disposable {
       type: 'reject',
       relativePath,
       fsPath: pending.fsPath,
-      description: `Reject hunk #${hunkIndex + 1} in ${relativePath}`,
+      description: `Reject change at L${hunks[hunkIndex].newStart + 1} in ${relativePath}`,
       previousPending: prevPendingClone,
       previousCleanBaseline: prevClean,
       contentBeforeReject: current,

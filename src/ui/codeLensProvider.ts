@@ -93,27 +93,6 @@ export class InlineReviewCodeLensProvider
       return [];
     }
 
-    if (!inDiff) {
-      const topRange = new vscode.Range(0, 0, 0, 0);
-      lenses.push(
-        new vscode.CodeLens(topRange, {
-          title: `$(diff) Inline Review: ${hunks.length} hunk(s) — Open Inline Diff`,
-          command: 'inlineReview.openInlineDiff',
-          arguments: [rel, hunks[0].newStart],
-        }),
-        new vscode.CodeLens(topRange, {
-          title: '$(check-all) Accept File',
-          command: 'inlineReview.acceptFile',
-          arguments: [rel],
-        }),
-        new vscode.CodeLens(topRange, {
-          title: '$(discard) Reject File',
-          command: 'inlineReview.rejectFile',
-          arguments: [rel],
-        })
-      );
-    }
-
     const maxLine = Math.max(0, document.lineCount - 1);
     for (const h of hunks) {
       const targetLine = Math.min(h.newStart, maxLine);
@@ -121,12 +100,12 @@ export class InlineReviewCodeLensProvider
 
       lenses.push(
         new vscode.CodeLens(range, {
-          title: '$(check) Accept Hunk',
+          title: '$(check) Accept',
           command: 'inlineReview.acceptHunk',
           arguments: [rel, h.index],
         }),
         new vscode.CodeLens(range, {
-          title: '$(close) Reject Hunk',
+          title: '$(close) Reject',
           command: 'inlineReview.rejectHunk',
           arguments: [rel, h.index],
         })
